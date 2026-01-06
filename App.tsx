@@ -118,7 +118,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] w-full bg-white overflow-hidden text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="fixed inset-0 flex bg-white overflow-hidden text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
       
       {machineToDelete && (
@@ -142,7 +142,7 @@ const App: React.FC = () => {
         setSelectedPart={setSelectedPart}
       />
 
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-white h-[100dvh]">
+      <main className="flex-1 flex flex-col relative h-full overflow-hidden bg-white">
         <Header 
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
@@ -151,8 +151,8 @@ const App: React.FC = () => {
           onLogout={() => setShowWelcome(true)}
         />
 
-        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row h-full">
-          <div className="flex-1 relative bg-slate-50 flex items-center justify-center p-4 lg:p-8 overflow-auto no-scrollbar">
+        <div className="flex-1 relative flex flex-col lg:flex-row min-h-0">
+          <div className="flex-1 relative bg-slate-50 flex items-center justify-center p-4 lg:p-8 overflow-auto">
             {mode === AppMode.CATALOG ? (
               <CatalogView parts={parts} onImport={(np) => setParts([...parts, ...np])} />
             ) : selectedMachine ? (
@@ -179,19 +179,16 @@ const App: React.FC = () => {
             )}
           </div>
 
-          {mode !== AppMode.CATALOG && (
+          {mode !== AppMode.CATALOG && selectedPart && (
             <div className={`
               fixed bottom-0 left-0 right-0 lg:static lg:w-[32rem] bg-white border-t lg:border-t-0 lg:border-l border-slate-100
-              ${selectedPart ? 'translate-y-0 opacity-100' : 'translate-y-full lg:translate-y-0 lg:translate-x-full lg:opacity-0 pointer-events-none'}
-              transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) p-6 lg:p-12 overflow-y-auto z-40 max-h-[85vh] lg:max-h-full no-scrollbar
+              translate-y-0 opacity-100 transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) p-6 lg:p-12 overflow-y-auto z-40 max-h-[85vh] lg:max-h-full
               shadow-[0_-30px_60px_rgba(0,0,0,0.08)] lg:shadow-none
             `}>
-              {selectedPart && (
-                <PartDetailsCard 
-                  part={selectedPart} 
-                  onClose={() => setSelectedPart(null)} 
-                />
-              )}
+              <PartDetailsCard 
+                part={selectedPart} 
+                onClose={() => setSelectedPart(null)} 
+              />
             </div>
           )}
         </div>

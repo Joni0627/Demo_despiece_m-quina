@@ -12,13 +12,13 @@ interface Props {
 
 const WelcomeModal: React.FC<Props> = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto no-scrollbar animate-in fade-in duration-700">
+    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto animate-in fade-in duration-700">
       <div className="min-h-full flex flex-col items-center justify-center p-6 md:p-12">
-        <div className="max-w-4xl w-full text-center">
+        <div className="max-w-4xl w-full text-center py-8">
           
           {/* Logo animado */}
           <div className="mb-8 md:mb-12 flex justify-center">
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-3xl md:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-200 animate-float">
+            <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-3xl md:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-100 animate-float">
               <Target className="w-10 h-10 md:w-12 md:h-12 text-white" />
             </div>
           </div>
