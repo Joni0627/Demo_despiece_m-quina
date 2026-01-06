@@ -35,8 +35,8 @@ const CatalogView: React.FC<Props> = ({ parts, onImport }) => {
   };
 
   return (
-    <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col animate-in fade-in duration-500">
-      <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="w-full h-full bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col animate-in fade-in duration-500 overflow-hidden">
+      <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-4 flex-1">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -64,9 +64,9 @@ const CatalogView: React.FC<Props> = ({ parts, onImport }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
+      <div className="flex-1 overflow-auto no-scrollbar">
+        <table className="w-full text-left border-collapse min-w-[800px]">
+          <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200 shadow-[0_1px_0_0_rgba(226,232,240,1)]">
             <tr>
               <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Código</th>
               <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Material / Descripción</th>
@@ -109,7 +109,7 @@ const CatalogView: React.FC<Props> = ({ parts, onImport }) => {
         </table>
       </div>
       
-      <div className="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-400 text-center">
+      <div className="p-4 border-t border-slate-100 bg-slate-50 text-xs text-slate-400 text-center shrink-0">
         Total de materiales registrados: <span className="font-bold text-slate-600">{parts.length}</span>
       </div>
     </div>

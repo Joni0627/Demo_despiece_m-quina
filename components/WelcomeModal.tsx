@@ -1,8 +1,7 @@
 
 /**
  * ARCHIVO: components/WelcomeModal.tsx
- * DESCRIPCIÓN: Pantalla de inicio de Check Vector optimizada para móviles y escritorio.
- * Incluye correcciones de márgenes, scroll interno para pantallas pequeñas y animaciones fluidas.
+ * DESCRIPCIÓN: Pantalla de inicio de Check Vector optimizada sin scrollbars visibles.
  */
 import React from 'react';
 import { Box, Layers, Target, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -13,11 +12,11 @@ interface Props {
 
 const WelcomeModal: React.FC<Props> = ({ onClose }) => {
   return (
-    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto animate-in fade-in duration-700">
+    <div className="fixed inset-0 z-[100] bg-white overflow-y-auto no-scrollbar animate-in fade-in duration-700">
       <div className="min-h-full flex flex-col items-center justify-center p-6 md:p-12">
         <div className="max-w-4xl w-full text-center">
           
-          {/* Logo animado - Asegurado dentro del flujo */}
+          {/* Logo animado */}
           <div className="mb-8 md:mb-12 flex justify-center">
             <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-3xl md:rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-200 animate-float">
               <Target className="w-10 h-10 md:w-12 md:h-12 text-white" />
@@ -39,7 +38,7 @@ const WelcomeModal: React.FC<Props> = ({ onClose }) => {
             </p>
           </div>
 
-          {/* Grid de beneficios - Ajustado para no desbordar */}
+          {/* Grid de beneficios */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16 animate-in fade-in zoom-in-95 duration-700 delay-500 fill-mode-both">
             {[
               { 
@@ -74,7 +73,7 @@ const WelcomeModal: React.FC<Props> = ({ onClose }) => {
             ))}
           </div>
 
-          {/* Botón de acción principal - Siempre visible y contenido */}
+          {/* Botón de acción principal */}
           <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700 fill-mode-both pb-8 md:pb-0">
             <button 
               onClick={onClose}

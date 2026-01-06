@@ -1,7 +1,7 @@
 
 /**
  * ARCHIVO: components/Sidebar.tsx
- * DESCRIPCIÓN: Panel de navegación lateral con el nuevo branding "Check Vector".
+ * DESCRIPCIÓN: Panel de navegación lateral Check Vector sin scrollbars visibles.
  */
 import React from 'react';
 import { LayoutDashboard, Eye, Package, Upload, X, Target } from 'lucide-react';
@@ -47,7 +47,7 @@ const Sidebar: React.FC<Props> = ({
         </button>
       </div>
       
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="px-6 mt-8 flex justify-between items-center mb-4">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Bases de Datos</h3>
           <label className="cursor-pointer bg-slate-50 text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 border border-indigo-100 transition-all shadow-sm">
