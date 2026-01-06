@@ -1,4 +1,10 @@
 
+/**
+ * ARCHIVO: types.ts
+ * DESCRIPCIÓN: Contiene las interfaces y enums fundamentales para el modelo de datos
+ * de piezas, máquinas, puntos de interés y estados de la aplicación.
+ */
+
 export interface Part {
   id: string;
   code: string;
@@ -12,8 +18,8 @@ export interface Part {
 export interface Hotspot {
   id: string;
   partId: string;
-  x: number; // Percentage 0-100
-  y: number; // Percentage 0-100
+  x: number; // Porcentaje 0-100
+  y: number; // Porcentaje 0-100
 }
 
 export interface Machine {

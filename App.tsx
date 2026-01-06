@@ -1,12 +1,19 @@
 
+/**
+ * ARCHIVO: App.tsx
+ * DESCRIPCIÓN: Orquestador central Check Vector.
+ */
 import React, { useState, useEffect } from 'react';
 import { INITIAL_MACHINES, INITIAL_PARTS } from './data';
 import { Machine, Part, Hotspot, AppMode } from './types';
 import ExplodedView from './components/ExplodedView';
 import PartDetailsCard from './components/PartDetailsCard';
-import MachineSelector from './components/MachineSelector';
 import CatalogView from './components/CatalogView';
-import { Settings, Eye, Package, Menu, X, PlusCircle, Upload } from 'lucide-react';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import WelcomeModal from './components/WelcomeModal';
+import DeleteMachineModal from './components/DeleteMachineModal';
+import { Target } from 'lucide-react';
 
 const App: React.FC = () => {
   const [machines, setMachines] = useState<Machine[]>(INITIAL_MACHINES);
@@ -15,18 +22,25 @@ const App: React.FC = () => {
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [mode, setMode] = useState<AppMode>(AppMode.VIEWER);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [machineToDelete, setMachineToDelete] = useState<Machine | null>(null);
 
-  // Persistence
   useEffect(() => {
-    const savedMachines = localStorage.getItem('mech_explode_machines');
-    const savedParts = localStorage.getItem('mech_explode_parts');
+    const savedMachines = localStorage.getItem('cv_machines');
+    const savedParts = localStorage.getItem('cv_parts');
+    const hasVisited = localStorage.getItem('cv_visited');
+
     if (savedMachines) setMachines(JSON.parse(savedMachines));
     if (savedParts) setParts(JSON.parse(savedParts));
+    if (!hasVisited) {
+      setShowWelcome(true);
+      localStorage.setItem('cv_visited', 'true');
+    }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('mech_explode_machines', JSON.stringify(machines));
-    localStorage.setItem('mech_explode_parts', JSON.stringify(parts));
+    localStorage.setItem('cv_machines', JSON.stringify(machines));
+    localStorage.setItem('cv_parts', JSON.stringify(parts));
   }, [machines, parts]);
 
   const handleSelectMachine = (machine: Machine) => {
@@ -44,7 +58,7 @@ const App: React.FC = () => {
       const result = event.target?.result as string;
       const newMachine: Machine = {
         id: `m-${Date.now()}`,
-        name: file.name.split('.')[0],
+        name: file.name.split('.')[0].toUpperCase(),
         imageUrl: result,
         hotspots: []
       };
@@ -53,6 +67,17 @@ const App: React.FC = () => {
       setMode(AppMode.EDITOR);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!machineToDelete) return;
+    const updatedMachines = machines.filter(m => m.id !== machineToDelete.id);
+    setMachines(updatedMachines);
+    if (selectedMachine?.id === machineToDelete.id) {
+      setSelectedMachine(null);
+      setSelectedPart(null);
+    }
+    setMachineToDelete(null);
   };
 
   const handleAddHotspot = (x: number, y: number, partId: string) => {
@@ -92,102 +117,43 @@ const App: React.FC = () => {
     setSelectedPart(null);
   };
 
-  const handleImportParts = (newParts: Part[]) => {
-    setParts([...parts, ...newParts]);
-  };
-
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-900">
-      {/* Sidebar Navigation */}
-      <div className={`
-        ${isSidebarOpen ? 'w-80' : 'w-0'} 
-        transition-all duration-300 bg-white border-r border-slate-200 flex flex-col z-20
-      `}>
-        {isSidebarOpen && (
-          <>
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h1 className="text-xl font-bold text-indigo-600 tracking-tight flex items-center gap-2">
-                <Settings className="w-6 h-6" />
-                MechExplode
-              </h1>
-              <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-400">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pb-6">
-              <div className="px-6 mt-6 flex justify-between items-center mb-4">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Planos</h3>
-                <label className="cursor-pointer bg-indigo-50 text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
-                  <Upload className="w-4 h-4" />
-                  <input type="file" className="hidden" accept="image/*,application/pdf" onChange={handleAddMachine} />
-                </label>
-              </div>
+    <div className="flex h-screen bg-white overflow-hidden text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+      
+      {machineToDelete && (
+        <DeleteMachineModal 
+          machineName={machineToDelete.name}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setMachineToDelete(null)}
+        />
+      )}
 
-              <MachineSelector 
-                machines={machines} 
-                selectedId={selectedMachine?.id || null}
-                onSelect={handleSelectMachine}
-              />
-              
-              <div className="mt-8 px-6">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Navegación</h3>
-                <nav className="space-y-1">
-                  <button 
-                    onClick={() => { setMode(AppMode.VIEWER); setSelectedPart(null); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${mode === AppMode.VIEWER ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    <Eye className="w-4 h-4" />
-                    Visor de Explosión
-                  </button>
-                  <button 
-                    onClick={() => { setMode(AppMode.EDITOR); setSelectedPart(null); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${mode === AppMode.EDITOR ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Editor de Puntos
-                  </button>
-                  <button 
-                    onClick={() => { setMode(AppMode.CATALOG); setSelectedPart(null); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${mode === AppMode.CATALOG ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    <Package className="w-4 h-4" />
-                    Catálogo de Piezas
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <Sidebar 
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
+        mode={mode}
+        setMode={setMode}
+        machines={machines}
+        selectedMachineId={selectedMachine?.id || null}
+        onSelectMachine={handleSelectMachine}
+        onAddMachine={handleAddMachine}
+        onDeleteMachine={setMachineToDelete}
+        setSelectedPart={setSelectedPart}
+      />
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center px-6 justify-between sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            {!isSidebarOpen && (
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-100 rounded-lg">
-                <Menu className="w-5 h-5 text-slate-600" />
-              </button>
-            )}
-            <h2 className="font-semibold text-slate-800">
-              {mode === AppMode.CATALOG ? 'Catálogo General de Materiales' : (selectedMachine ? selectedMachine.name : 'Explosión de Materiales')}
-            </h2>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide 
-              ${mode === AppMode.EDITOR ? 'bg-amber-100 text-amber-700' : 
-                mode === AppMode.CATALOG ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700'}`}>
-              {mode} MODE
-            </span>
-          </div>
-        </header>
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-white">
+        <Header 
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          mode={mode}
+          title={mode === AppMode.CATALOG ? 'Panel de Catálogo Maestro' : (selectedMachine ? selectedMachine.name : 'Bienvenido a Check Vector')}
+        />
 
         <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-          <div className="flex-1 relative bg-slate-100 flex items-center justify-center p-8 overflow-auto">
+          <div className="flex-1 relative bg-slate-50 flex items-center justify-center p-4 lg:p-12 overflow-auto custom-scrollbar">
             {mode === AppMode.CATALOG ? (
-              <CatalogView parts={parts} onImport={handleImportParts} />
+              <CatalogView parts={parts} onImport={(np) => setParts([...parts, ...np])} />
             ) : selectedMachine ? (
               <ExplodedView 
                 machine={selectedMachine} 
@@ -198,21 +164,26 @@ const App: React.FC = () => {
                 onDeleteHotspot={handleDeleteHotspot}
               />
             ) : (
-              <div className="text-center">
-                <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-10 h-10 text-slate-400" />
+              <div className="text-center bg-white p-16 rounded-[4rem] shadow-2xl border border-slate-100 max-w-xl animate-in fade-in zoom-in-95 duration-1000">
+                <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-indigo-100 animate-float">
+                  <Target className="w-12 h-12 text-white" />
                 </div>
-                <p className="text-slate-500 max-w-xs">Sube un nuevo plano o selecciona uno existente para comenzar la visualización.</p>
+                <h3 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Comience su gestión</h3>
+                <p className="text-slate-500 text-lg mb-12 leading-relaxed font-medium">Suba un plano técnico para empezar a identificar activos o seleccione uno de su base de datos.</p>
+                <label className="inline-flex items-center gap-3 bg-indigo-600 text-white px-12 py-5 rounded-full font-bold cursor-pointer hover:bg-indigo-700 hover:scale-105 transition-all shadow-2xl shadow-indigo-100">
+                  Importar nuevo activo
+                  <input type="file" className="hidden" accept="image/*" onChange={handleAddMachine} />
+                </label>
               </div>
             )}
           </div>
 
-          {/* Details Sidebar (only in viewer/editor and if a part is selected) */}
           {mode !== AppMode.CATALOG && (
             <div className={`
-              w-full lg:w-96 bg-white border-t lg:border-t-0 lg:border-l border-slate-200 
+              fixed bottom-0 left-0 right-0 lg:static lg:w-[32rem] bg-white border-t lg:border-t-0 lg:border-l border-slate-100
               ${selectedPart ? 'translate-y-0 opacity-100' : 'translate-y-full lg:translate-y-0 lg:translate-x-full lg:opacity-0 pointer-events-none'}
-              transition-all duration-300 p-6 overflow-y-auto
+              transition-all duration-700 cubic-bezier(0.16, 1, 0.3, 1) p-6 lg:p-12 overflow-y-auto z-40 max-h-[85vh] lg:max-h-full
+              shadow-[0_-30px_60px_rgba(0,0,0,0.08)] lg:shadow-none
             `}>
               {selectedPart && (
                 <PartDetailsCard 
