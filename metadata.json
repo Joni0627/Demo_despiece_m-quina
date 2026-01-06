@@ -1,0 +1,7 @@
+{
+  "name": "MechExplode Pro",
+  "description": "Explosión de materiales interactiva para maquinaria industrial con editor de puntos de interés y gestión de inventario.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
