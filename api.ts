@@ -2,21 +2,16 @@
 /**
  * ARCHIVO: api.ts
  * DESCRIPCIÓN: Motor de Base de Datos conectado a Firebase Cloud.
- * Gestiona persistencia en Firestore y almacenamiento de imágenes en Firebase Storage
- * utilizando variables de entorno para mayor seguridad.
  */
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
   collection, 
   getDocs, 
-  addDoc, 
   updateDoc, 
   doc, 
   deleteDoc, 
   setDoc,
-  query,
-  where,
   getDoc
 } from "firebase/firestore";
 import { 
@@ -29,7 +24,6 @@ import {
 import { Machine, Part, Hotspot } from './types';
 import { INITIAL_MACHINES, INITIAL_PARTS } from './data';
 
-// Configuración de Firebase obtenida de variables de entorno
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || "AIzaSyAtHMhw4ecCZy5MMWHn32wKxdm1B6TUqIU",
   authDomain: process.env.FIREBASE_AUTH_DOMAIN || "demodespiecemaquina.firebaseapp.com",
@@ -39,149 +33,92 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID || "1:618607332118:web:ee3eeae543a0a170061e37"
 };
 
-// Inicialización de Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Nombres de colecciones
 const COLL_MACHINES = "machines";
 const COLL_PARTS = "parts";
 
-/**
- * Función de sembrado inicial (Seeding)
- * Si las colecciones están vacías en Firebase, las puebla con datos de ejemplo.
- */
 const seedCloudDatabase = async () => {
   try {
     const partsSnap = await getDocs(collection(db, COLL_PARTS));
     if (partsSnap.empty) {
-      console.log("Poblando catálogo de partes en la nube...");
       for (const p of INITIAL_PARTS) {
         await setDoc(doc(db, COLL_PARTS, p.id), p);
       }
     }
-
     const machinesSnap = await getDocs(collection(db, COLL_MACHINES));
     if (machinesSnap.empty) {
-      console.log("Poblando lista de máquinas en la nube...");
       for (const m of INITIAL_MACHINES) {
         await setDoc(doc(db, COLL_MACHINES, m.id), m);
       }
     }
   } catch (e) {
-    console.error("Error en el seeding inicial:", e);
+    console.error("Error en el seeding:", e);
   }
 };
 
-// Ejecutamos el seeding
 seedCloudDatabase();
 
 export const api = {
-  /**
-   * Obtiene todas las máquinas desde Firestore
-   */
   async getMachines(): Promise<Machine[]> {
     const querySnapshot = await getDocs(collection(db, COLL_MACHINES));
-    return querySnapshot.docs.map(doc => ({ 
-      ...doc.data(), 
-      id: doc.id 
-    } as Machine));
+    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Machine));
   },
 
-  /**
-   * Obtiene todo el catálogo de partes desde Firestore
-   */
   async getParts(): Promise<Part[]> {
     const querySnapshot = await getDocs(collection(db, COLL_PARTS));
-    return querySnapshot.docs.map(doc => ({ 
-      ...doc.data(), 
-      id: doc.id 
-    } as Part));
+    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Part));
   },
 
-  /**
-   * Guarda un nuevo punto de interés en una máquina específica
-   */
+  async savePart(part: Omit<Part, 'id'>): Promise<Part> {
+    const id = `p-${Date.now()}`;
+    const newPart = { ...part, id };
+    await setDoc(doc(db, COLL_PARTS, id), newPart);
+    return newPart;
+  },
+
   async saveHotspot(machineId: string, hotspot: Omit<Hotspot, 'id'>): Promise<Hotspot> {
     const machineDocRef = doc(db, COLL_MACHINES, machineId);
     const machineSnap = await getDoc(machineDocRef);
-    
-    if (!machineSnap.exists()) throw new Error("La máquina no existe en la nube.");
-
+    if (!machineSnap.exists()) throw new Error("Máquina no encontrada.");
     const currentData = machineSnap.data() as Machine;
-    const newHotspot: Hotspot = {
-      ...hotspot,
-      id: `h-${Date.now()}`
-    };
-
-    const updatedHotspots = [...(currentData.hotspots || []), newHotspot];
-    
-    await updateDoc(machineDocRef, {
-      hotspots: updatedHotspots
-    });
-
+    const newHotspot = { ...hotspot, id: `h-${Date.now()}` };
+    await updateDoc(machineDocRef, { hotspots: [...(currentData.hotspots || []), newHotspot] });
     return newHotspot;
   },
 
-  /**
-   * Elimina un punto de interés
-   */
   async deleteHotspot(id: string): Promise<void> {
     const machines = await this.getMachines();
     const machine = machines.find(m => m.hotspots.some(h => h.id === id));
-    
     if (machine) {
-      const machineDocRef = doc(db, COLL_MACHINES, machine.id);
-      const filteredHotspots = machine.hotspots.filter(h => h.id !== id);
-      await updateDoc(machineDocRef, {
-        hotspots: filteredHotspots
+      await updateDoc(doc(db, COLL_MACHINES, machine.id), {
+        hotspots: machine.hotspots.filter(h => h.id !== id)
       });
     }
   },
 
-  /**
-   * Sube una imagen a Firebase Storage y guarda los metadatos en Firestore
-   */
   async uploadMachine(machine: Omit<Machine, 'id' | 'hotspots'>): Promise<Machine> {
     const machineId = `m-${Date.now()}`;
     let finalImageUrl = machine.imageUrl;
-
     if (machine.imageUrl.startsWith('data:')) {
-      const storagePath = `blueprints/${machineId}_${Date.now()}.png`;
-      const storageRef = ref(storage, storagePath);
-      
+      const storageRef = ref(storage, `blueprints/${machineId}.png`);
       const uploadResult = await uploadString(storageRef, machine.imageUrl, 'data_url');
       finalImageUrl = await getDownloadURL(uploadResult.ref);
     }
-
-    const newMachine: Machine = {
-      id: machineId,
-      name: machine.name,
-      imageUrl: finalImageUrl,
-      hotspots: []
-    };
-
+    const newMachine = { id: machineId, name: machine.name, imageUrl: finalImageUrl, hotspots: [] };
     await setDoc(doc(db, COLL_MACHINES, machineId), newMachine);
     return newMachine;
   },
 
-  /**
-   * Elimina la máquina de Firestore y su imagen de Storage
-   */
   async deleteMachine(id: string): Promise<void> {
     const machineDocRef = doc(db, COLL_MACHINES, id);
     const machineSnap = await getDoc(machineDocRef);
-    
     if (machineSnap.exists()) {
       const data = machineSnap.data() as Machine;
-      if (data.imageUrl.includes('firebasestorage.googleapis.com')) {
-        try {
-          const imageRef = ref(storage, data.imageUrl);
-          await deleteObject(imageRef);
-        } catch (e) {
-          console.warn("No se pudo borrar el archivo de imagen.");
-        }
+      if (data.imageUrl.includes('firebasestorage')) {
+        try { await deleteObject(ref(storage, data.imageUrl)); } catch(e) {}
       }
       await deleteDoc(machineDocRef);
     }
