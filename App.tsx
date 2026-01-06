@@ -94,9 +94,9 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col relative h-full overflow-hidden">
         <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} mode={mode} title={mode === AppMode.CATALOG ? 'Catálogo Maestro' : (selectedMachine?.name || 'Inicio')} onLogout={() => setShowWelcome(true)} />
         <div className="flex-1 relative flex flex-col lg:flex-row min-h-0 bg-slate-50">
-          <div className="flex-1 flex items-center justify-center p-4 lg:p-12 overflow-auto scrollbar-hide">
+          <div className="flex-1 relative flex items-center justify-center p-0 overflow-hidden">
             {mode === AppMode.CATALOG ? (
-              <CatalogView parts={parts} onImport={fetchData} onRefresh={fetchData} />
+              <div className="w-full h-full p-6 lg:p-12"><CatalogView parts={parts} onImport={fetchData} onRefresh={fetchData} /></div>
             ) : selectedMachine ? (
               <ExplodedView machine={selectedMachine} parts={parts} mode={mode} onHotspotClick={(pid) => setSelectedPart(parts.find(p => p.id === pid) || null)} onAddHotspot={handleAddHotspot} onDeleteHotspot={handleDeleteHotspot} />
             ) : (
@@ -104,7 +104,7 @@ const App: React.FC = () => {
             )}
           </div>
           {mode !== AppMode.CATALOG && selectedPart && (
-            <div className="w-full lg:w-[28rem] bg-white border-l border-slate-100 p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
+            <div className="w-full lg:w-[28rem] bg-white border-l border-slate-100 p-8 overflow-y-auto animate-in slide-in-from-right duration-300 shadow-2xl z-40">
               <PartDetailsCard part={selectedPart} onClose={() => setSelectedPart(null)} />
             </div>
           )}
