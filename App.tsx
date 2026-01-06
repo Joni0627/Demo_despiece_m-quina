@@ -1,7 +1,7 @@
 
 /**
  * ARCHIVO: App.tsx
- * DESCRIPCIÓN: Orquestador central con alertas descriptivas para depuración.
+ * DESCRIPCIÓN: Orquestador central actualizado para usar IndexedDB (Storage local robusto).
  */
 import React, { useState, useEffect } from 'react';
 import { Machine, Part, Hotspot, AppMode } from './types';
@@ -13,7 +13,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import WelcomeModal from './components/WelcomeModal';
 import DeleteMachineModal from './components/DeleteMachineModal';
-import { Target, Loader2, AlertCircle } from 'lucide-react';
+import { Target, Loader2 } from 'lucide-react';
 
 const App: React.FC = () => {
   const [machines, setMachines] = useState<Machine[]>([]);
@@ -30,6 +30,8 @@ const App: React.FC = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        // Esperamos un poco más para asegurar que IndexedDB esté listo
+        await new Promise(r => setTimeout(r, 200));
         const [machinesData, partsData] = await Promise.all([
           api.getMachines(),
           api.getParts()
@@ -37,13 +39,17 @@ const App: React.FC = () => {
         setMachines(machinesData);
         setParts(partsData);
         
+        if (machinesData.length > 0 && !selectedMachine) {
+          setSelectedMachine(machinesData[0]);
+        }
+
         const hasVisited = localStorage.getItem('cv_visited');
         if (!hasVisited) {
           setShowWelcome(true);
           localStorage.setItem('cv_visited', 'true');
         }
       } catch (error: any) {
-        console.error("Error sincronizando:", error);
+        console.error("Error al cargar Storage Local (IndexedDB):", error);
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +81,7 @@ const App: React.FC = () => {
         setSelectedMachine(createdMachine);
         setMode(AppMode.EDITOR);
       } catch (error: any) {
-        alert(`Error al subir: ${error.message}`);
+        alert(`Error al subir plano: ${error.message}`);
       }
     };
     reader.readAsDataURL(file);
@@ -85,6 +91,7 @@ const App: React.FC = () => {
     if (!selectedMachine) return;
     try {
       const newHotspot = await api.saveHotspot(selectedMachine.id, { partId, x, y });
+      
       const updatedMachines = machines.map(m => {
         if (m.id === selectedMachine.id) {
           const updatedM = { ...m, hotspots: [...m.hotspots, newHotspot] };
@@ -119,11 +126,26 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteMachine = async () => {
+    if (!machineToDelete) return;
+    try {
+      await api.deleteMachine(machineToDelete.id);
+      const updated = machines.filter(m => m.id !== machineToDelete.id);
+      setMachines(updated);
+      if (selectedMachine?.id === machineToDelete.id) {
+        setSelectedMachine(updated.length > 0 ? updated[0] : null);
+      }
+      setMachineToDelete(null);
+    } catch (error) {
+      alert("Error al eliminar el activo");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white flex-col gap-4">
         <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-        <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Conectando a MySQL...</p>
+        <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-[10px]">Accediendo al Storage Seguro...</p>
       </div>
     );
   }
@@ -135,7 +157,7 @@ const App: React.FC = () => {
       {machineToDelete && (
         <DeleteMachineModal 
           machineName={machineToDelete.name}
-          onConfirm={() => setMachineToDelete(null)}
+          onConfirm={handleDeleteMachine}
           onCancel={() => setMachineToDelete(null)}
         />
       )}
@@ -165,7 +187,11 @@ const App: React.FC = () => {
         <div className="flex-1 relative flex flex-col lg:flex-row min-h-0">
           <div className="flex-1 relative bg-slate-50 flex items-center justify-center p-4 lg:p-8 overflow-auto">
             {mode === AppMode.CATALOG ? (
-              <CatalogView parts={parts} onImport={() => {}} />
+              <CatalogView parts={parts} onImport={async (newParts) => {
+                // Para simplificar, agregamos los nuevos al estado
+                setParts(prev => [...prev, ...newParts]);
+                // Nota: En una app real guardaríamos esto también en IndexedDB
+              }} />
             ) : selectedMachine ? (
               <ExplodedView 
                 machine={selectedMachine} 
@@ -180,8 +206,8 @@ const App: React.FC = () => {
                 <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-2xl animate-float">
                   <Target className="w-12 h-12 text-white" />
                 </div>
-                <h3 className="text-4xl font-black text-slate-900 mb-4">Check Vector Cloud</h3>
-                <p className="text-slate-500 text-lg mb-8 leading-relaxed">Seleccione un plano de la base de datos MySQL para visualizar sus componentes.</p>
+                <h3 className="text-4xl font-black text-slate-900 mb-4">Check Vector Vault</h3>
+                <p className="text-slate-500 text-lg mb-8 leading-relaxed">No hay activos en el storage. Por favor, cargue un nuevo plano o use el buscador lateral.</p>
               </div>
             )}
           </div>

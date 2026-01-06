@@ -1,10 +1,10 @@
 
 /**
  * ARCHIVO: components/Sidebar.tsx
- * DESCRIPCIÓN: Panel de navegación lateral Check Vector sin scrollbars visibles.
+ * DESCRIPCIÓN: Panel de navegación lateral con buscador de activos integrado.
  */
-import React from 'react';
-import { LayoutDashboard, Eye, Package, Upload, X, Target } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, Eye, Package, Upload, X, Target, Search } from 'lucide-react';
 import { AppMode, Machine } from '../types';
 import MachineSelector from './MachineSelector';
 
@@ -25,6 +25,12 @@ const Sidebar: React.FC<Props> = ({
   isOpen, setIsOpen, mode, setMode, machines, 
   selectedMachineId, onSelectMachine, onAddMachine, onDeleteMachine, setSelectedPart 
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMachines = machines.filter(m => 
+    m.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <aside className={`
       ${isOpen ? 'w-80' : 'w-0'} 
@@ -48,20 +54,36 @@ const Sidebar: React.FC<Props> = ({
       </div>
       
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="px-6 mt-8 flex justify-between items-center mb-4">
-          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Bases de Datos</h3>
-          <label className="cursor-pointer bg-slate-50 text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 border border-indigo-100 transition-all shadow-sm">
-            <Upload className="w-3.5 h-3.5" />
-            <input type="file" className="hidden" accept="image/*" onChange={onAddMachine} />
-          </label>
+        <div className="px-6 mt-8 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Bases de Datos</h3>
+            <label className="cursor-pointer bg-slate-50 text-indigo-600 p-2 rounded-xl hover:bg-indigo-50 border border-indigo-100 transition-all shadow-sm">
+              <Upload className="w-3.5 h-3.5" />
+              <input type="file" className="hidden" accept="image/*" onChange={onAddMachine} />
+            </label>
+          </div>
+
+          {/* Buscador de Máquinas */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input 
+              type="text"
+              placeholder="Buscar activo..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+            />
+          </div>
         </div>
 
-        <MachineSelector 
-          machines={machines} 
-          selectedId={selectedMachineId}
-          onSelect={onSelectMachine}
-          onDeleteRequest={onDeleteMachine}
-        />
+        <div className="mt-4">
+          <MachineSelector 
+            machines={filteredMachines} 
+            selectedId={selectedMachineId}
+            onSelect={onSelectMachine}
+            onDeleteRequest={onDeleteMachine}
+          />
+        </div>
         
         <div className="mt-10 px-6 pb-10">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Modo de Trabajo</h3>
